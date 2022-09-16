@@ -26,11 +26,15 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class PlayerManager {
 
+    private final CustomDiscs plugin;
+    private final HopperManager hopperManager;
     private final Map<UUID, Stoppable> playerMap;
     private final ExecutorService executorService;
-    private static AudioFormat FORMAT = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 48000F, 16, 1, 2, 48000F, false);
+    private static final AudioFormat FORMAT = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 48000F, 16, 1, 2, 48000F, false);
 
-    public PlayerManager() {
+    public PlayerManager(CustomDiscs plugin, HopperManager hopperManager) {
+        this.plugin = plugin;
+        this.hopperManager = hopperManager;
         this.playerMap = new ConcurrentHashMap<>();
         this.executorService = Executors.newSingleThreadExecutor(r -> {
             Thread thread = new Thread(r, "AudioPlayerThread");
@@ -47,7 +51,7 @@ public class PlayerManager {
         if (audioChannel == null) return;
 
         audioChannel.setCategory(VoicePlugin.MUSIC_DISC_CATEGORY);
-        audioChannel.setDistance(CustomDiscs.getInstance().musicDiscDistance);
+        audioChannel.setDistance(plugin.musicDiscDistance);
 
         AtomicBoolean stopped = new AtomicBoolean();
         AtomicReference<de.maxhenkel.voicechat.api.audiochannel.AudioPlayer> player = new AtomicReference<>();
@@ -71,7 +75,7 @@ public class PlayerManager {
 
             audioPlayer.setOnStopped(() -> {
 
-                Bukkit.getScheduler().runTask(CustomDiscs.getInstance(), () -> HopperManager.instance().itemJukeboxToHopper(block));
+                Bukkit.getScheduler().runTask(plugin, () -> hopperManager.itemJukeboxToHopper(block));
 
                 playerMap.remove(id);
             });
@@ -103,11 +107,11 @@ public class PlayerManager {
         }
     }
 
-    private static short[] readSoundFile(Path file) throws UnsupportedAudioFileException, IOException, LineUnavailableException {
+    private short[] readSoundFile(Path file) throws UnsupportedAudioFileException, IOException, LineUnavailableException {
         return VoicePlugin.voicechatApi.getAudioConverter().bytesToShorts(convertFormat(file, FORMAT));
     }
 
-    private static byte[] convertFormat(Path file, AudioFormat audioFormat) throws UnsupportedAudioFileException, IOException, LineUnavailableException {
+    private byte[] convertFormat(Path file, AudioFormat audioFormat) throws UnsupportedAudioFileException, IOException, LineUnavailableException {
         AudioInputStream finalInputStream = null;
 
         if (getFileExtension(file.toFile().toString()).equals("wav")) {
@@ -125,13 +129,13 @@ public class PlayerManager {
 
         assert finalInputStream != null;
 
-        return adjustVolume(finalInputStream.readAllBytes(), CustomDiscs.getInstance().musicDiscVolume);
+        return adjustVolume(finalInputStream.readAllBytes(), plugin.musicDiscVolume);
     }
 
-    private static byte[] adjustVolume(byte[] audioSamples, double volume) {
+    private byte[] adjustVolume(byte[] audioSamples, double volume) {
 
         if (volume > 1d || volume < 0d) {
-            CustomDiscs.getInstance().getServer().getLogger().info("Error: The volume must be between 0 and 1 in the config!");
+            plugin.getServer().getLogger().info("Error: The volume must be between 0 and 1 in the config!");
             return null;
         }
 
@@ -165,7 +169,7 @@ public class PlayerManager {
         playerMap.remove(id);
     }
 
-    public static float getLengthSeconds(Path file) throws UnsupportedAudioFileException, IOException, LineUnavailableException {
+    public float getLengthSeconds(Path file) throws UnsupportedAudioFileException, IOException, LineUnavailableException {
         short[] audio = readSoundFile(file);
         return (float) audio.length / FORMAT.getSampleRate();
     }
@@ -175,22 +179,13 @@ public class PlayerManager {
         return playerMap.containsKey(id);
     }
 
-    private static String getFileExtension(String s) {
+    private String getFileExtension(String s) {
         int index = s.lastIndexOf(".");
         if (index > 0) {
             return s.substring(index + 1);
         } else {
             return "";
         }
-    }
-
-    private static PlayerManager instance;
-
-    public static PlayerManager instance() {
-        if (instance == null) {
-            instance = new PlayerManager();
-        }
-        return instance;
     }
 
     private interface Stoppable {

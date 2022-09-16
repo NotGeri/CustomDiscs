@@ -66,7 +66,7 @@ public class VoicePlugin implements VoicechatPlugin {
 
     private int[][] getMusicDiscIcon() {
         try {
-            Enumeration<URL> resources = CustomDiscs.getInstance().getClass().getClassLoader().getResources("music_disc_category.png");
+            Enumeration<URL> resources = CustomDiscs.class.getClassLoader().getResources("music_disc_category.png");
 
             while (resources.hasMoreElements()) {
                 BufferedImage bufferedImage = ImageIO.read(resources.nextElement().openStream());

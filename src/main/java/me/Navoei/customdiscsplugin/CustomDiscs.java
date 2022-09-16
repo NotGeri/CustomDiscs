@@ -4,17 +4,14 @@ import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
 import com.comphenix.protocol.events.ListenerPriority;
-import com.comphenix.protocol.events.PacketAdapter;
-import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.events.PacketEvent;
 import de.maxhenkel.voicechat.api.BukkitVoicechatService;
-import me.Navoei.customdiscsplugin.command.CommandManager;
-import me.Navoei.customdiscsplugin.event.JukeBox;
+import me.Navoei.customdiscsplugin.commands.CommandManager;
+import me.Navoei.customdiscsplugin.events.JukeBox;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bukkit.NamespacedKey;
-import org.bukkit.block.Jukebox;
-import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.ChatColor;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import javax.annotation.Nullable;
@@ -25,27 +22,21 @@ public final class CustomDiscs extends JavaPlugin {
 
     public static final String PLUGIN_ID = "CustomDiscs";
     public static final Logger LOGGER = LogManager.getLogger(PLUGIN_ID);
-    static CustomDiscs instance;
 
     @Nullable
     private VoicePlugin voicechatPlugin;
 
+    private FileConfiguration config;
     public float musicDiscDistance;
     public float musicDiscVolume;
 
     @Override
     public void onEnable() {
 
-        CustomDiscs.instance = this;
-
         BukkitVoicechatService service = getServer().getServicesManager().load(BukkitVoicechatService.class);
 
-        this.saveDefaultConfig();
-
         File musicData = new File(this.getDataFolder(), "musicdata");
-        if (!(musicData.exists())) {
-            musicData.mkdirs();
-        }
+        if (!musicData.exists()) musicData.mkdirs();
 
         if (service != null) {
             voicechatPlugin = new VoicePlugin();
@@ -55,44 +46,57 @@ public final class CustomDiscs extends JavaPlugin {
             LOGGER.info("Failed to register CustomDiscs plugin");
         }
 
-        getServer().getPluginManager().registerEvents(new JukeBox(), this);
-        getServer().getPluginManager().registerEvents(new HopperManager(), this);
-        getCommand("customdisc").setExecutor(new CommandManager());
+        HopperManager hopperManager = new HopperManager(this);
+        PlayerManager playerManager = new PlayerManager(this, hopperManager);
+        hopperManager.init(playerManager);
 
-        musicDiscDistance = getConfig().getInt("music-disc-distance");
-        musicDiscVolume = Float.parseFloat(Objects.requireNonNull(getConfig().getString("music-disc-volume")));
+        // Register listeners
+        this.getServer().getPluginManager().registerEvents(new JukeBox(this, hopperManager, playerManager), this);
+        this.getServer().getPluginManager().registerEvents(hopperManager, this);
+
+        // Register commands
+        this.getCommand("customdisc").setExecutor(new CommandManager(this));
+
+        // Get config settings
+        this.reload();
+        this.musicDiscDistance = config.getInt("settings.music-disc-distance");
+        this.musicDiscVolume = Float.parseFloat(Objects.requireNonNull(config.getString("settings.music-disc-volume")));
 
         ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
-
-        protocolManager.addPacketListener(new PacketAdapter(this, ListenerPriority.NORMAL, PacketType.Play.Server.WORLD_EVENT) {
-            @Override
-            public void onPacketSending(PacketEvent event) {
-                PacketContainer packet = event.getPacket();
-
-                if (packet.getIntegers().read(0).toString().equals("1010")) {
-                    Jukebox jukebox = (Jukebox) packet.getBlockPositionModifier().read(0).toLocation(event.getPlayer().getWorld()).getBlock().getState();
-
-                    if (!jukebox.getRecord().hasItemMeta()) return;
-
-                    if (jukebox.getRecord().getItemMeta().getPersistentDataContainer().has(new NamespacedKey(CustomDiscs.getInstance(), "customdisc"), PersistentDataType.STRING)) {
-                        event.setCancelled(true);
-                    }
-
-                }
-            }
-        });
-
+        protocolManager.addPacketListener(new CustomPacketAdapter(this, ListenerPriority.NORMAL, PacketType.Play.Server.WORLD_EVENT));
     }
 
     @Override
     public void onDisable() {
-        if (voicechatPlugin != null) {
-            getServer().getServicesManager().unregister(voicechatPlugin);
-            LOGGER.info("Successfully unregistered CustomDiscs plugin");
-        }
+        if (voicechatPlugin == null) return;
+        getServer().getServicesManager().unregister(voicechatPlugin);
+        LOGGER.info("Successfully unregistered CustomDiscs plugin");
     }
 
-    public static CustomDiscs getInstance() {
-        return instance;
+    public void reload() {
+        this.saveDefaultConfig();
+        this.reloadConfig();
+        this.config = this.getConfig();
     }
+
+    public FileConfiguration getConfiguration() {
+        return config;
+    }
+
+    public String getTranslation(String key) {
+        ConfigurationSection section = config.getConfigurationSection("translations");
+        if (section == null) {
+            LOGGER.info("Unable to translate text: " + key + " : configuration section 'translations' not found!");
+            return "";
+        }
+
+        String translation = section.getString(key, null);
+        if (translation == null) {
+            LOGGER.info("Unable to translate text: " + key + " not found!");
+            return "";
+        }
+
+        return ChatColor.translateAlternateColorCodes('&', translation);
+    }
+
 }

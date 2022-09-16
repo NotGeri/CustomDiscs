@@ -24,6 +24,17 @@ import java.util.Objects;
 
 public class HopperManager implements Listener {
 
+    private final CustomDiscs plugin;
+    private PlayerManager playerManager;
+
+    public HopperManager(CustomDiscs plugin) {
+        this.plugin = plugin;
+    }
+
+    public void init(PlayerManager playerManager) {
+        this.playerManager = playerManager;
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onHopperPickupFromOtherSource(InventoryMoveItemEvent event) {
 
@@ -47,16 +58,16 @@ public class HopperManager implements Listener {
         jukebox.setRecord(event.getItem());
         jukebox.update();
 
-        Bukkit.getScheduler().runTaskLater(CustomDiscs.getInstance(), () -> {
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
             hopper.getInventory().removeItem(event.getItem());
         }, 1L);
 
-        String soundFileName = event.getItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(CustomDiscs.getInstance(), "customdisc"), PersistentDataType.STRING);
+        String soundFileName = event.getItem().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(plugin, "customdisc"), PersistentDataType.STRING);
 
-        Path soundFilePath = Path.of(CustomDiscs.getInstance().getDataFolder().getPath(), "musicdata", soundFileName);
+        Path soundFilePath = Path.of(plugin.getDataFolder().getPath(), "musicdata", soundFileName);
 
         assert VoicePlugin.voicechatServerApi != null;
-        PlayerManager.instance().playLocationalAudio(VoicePlugin.voicechatServerApi, soundFilePath, null, jukebox.getBlock());
+        playerManager.playLocationalAudio(VoicePlugin.voicechatServerApi, soundFilePath, null, jukebox.getBlock());
 
     }
 
@@ -82,16 +93,16 @@ public class HopperManager implements Listener {
         jukebox.setRecord(event.getItem().getItemStack());
         jukebox.update();
 
-        Bukkit.getScheduler().runTaskLater(CustomDiscs.getInstance(), () -> {
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
             hopper.getInventory().removeItem(event.getItem().getItemStack());
         }, 1L);
 
-        String soundFileName = jukebox.getRecord().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(CustomDiscs.getInstance(), "customdisc"), PersistentDataType.STRING);
+        String soundFileName = jukebox.getRecord().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(plugin, "customdisc"), PersistentDataType.STRING);
 
-        Path soundFilePath = Path.of(CustomDiscs.getInstance().getDataFolder().getPath(), "musicdata", soundFileName);
+        Path soundFilePath = Path.of(plugin.getDataFolder().getPath(), "musicdata", soundFileName);
 
         assert VoicePlugin.voicechatServerApi != null;
-        PlayerManager.instance().playLocationalAudio(VoicePlugin.voicechatServerApi, soundFilePath, null, jukebox.getBlock());
+        playerManager.playLocationalAudio(VoicePlugin.voicechatServerApi, soundFilePath, null, jukebox.getBlock());
 
     }
 
@@ -106,7 +117,7 @@ public class HopperManager implements Listener {
 
             if (!event.getClickedInventory().getLocation().getBlock().getType().equals(Material.HOPPER)) return;
 
-            Bukkit.getScheduler().runTaskLater(CustomDiscs.getInstance(), () -> {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
 
                 Hopper hopperData = (Hopper) event.getInventory().getLocation().getBlock().getBlockData();
                 Block jukeboxBlock = event.getInventory().getLocation().getBlock().getRelative(hopperData.getFacing());
@@ -123,7 +134,7 @@ public class HopperManager implements Listener {
 
             if (!event.getInventory().getType().equals(InventoryType.HOPPER)) return;
 
-            Bukkit.getScheduler().runTaskLater(CustomDiscs.getInstance(), () -> {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
 
                 Hopper hopperData = (Hopper) event.getInventory().getLocation().getBlock().getBlockData();
                 Block jukeboxBlock = event.getInventory().getLocation().getBlock().getRelative(hopperData.getFacing());
@@ -138,7 +149,7 @@ public class HopperManager implements Listener {
 
             if (!event.getClickedInventory().getLocation().getBlock().getType().equals(Material.HOPPER)) return;
 
-            Bukkit.getScheduler().runTaskLater(CustomDiscs.getInstance(), () -> {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
 
                 Hopper hopperData = (Hopper) event.getInventory().getLocation().getBlock().getBlockData();
                 Block jukeboxBlock = event.getInventory().getLocation().getBlock().getRelative(hopperData.getFacing());
@@ -153,7 +164,7 @@ public class HopperManager implements Listener {
 
             if (!event.getClickedInventory().getLocation().getBlock().getType().equals(Material.HOPPER)) return;
 
-            Bukkit.getScheduler().runTaskLater(CustomDiscs.getInstance(), () -> {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
 
                 Hopper hopperData = (Hopper) event.getInventory().getLocation().getBlock().getBlockData();
                 Block jukeboxBlock = event.getInventory().getLocation().getBlock().getRelative(hopperData.getFacing());
@@ -168,7 +179,7 @@ public class HopperManager implements Listener {
 
             if (!event.getInventory().getType().equals(InventoryType.HOPPER)) return;
 
-            Bukkit.getScheduler().runTaskLater(CustomDiscs.getInstance(), () -> {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
 
                 Hopper hopperData = (Hopper) event.getInventory().getLocation().getBlock().getBlockData();
                 Block jukeboxBlock = event.getInventory().getLocation().getBlock().getRelative(hopperData.getFacing());
@@ -191,7 +202,7 @@ public class HopperManager implements Listener {
 
         if (event.getInventory().getHolder() instanceof HopperMinecart) return;
 
-        Bukkit.getScheduler().runTaskLater(CustomDiscs.getInstance(), () -> {
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
 
             Hopper hopperData = (Hopper) event.getInventory().getLocation().getBlock().getBlockData();
             Block jukeboxBlock = event.getInventory().getLocation().getBlock().getRelative(hopperData.getFacing());
@@ -206,7 +217,7 @@ public class HopperManager implements Listener {
     public void onChunkLoad(ChunkLoadEvent event) {
         for (BlockState blockState : event.getChunk().getTileEntities()) {
             if (blockState instanceof Jukebox) {
-                if (!PlayerManager.instance().isAudioPlayerPlaying(blockState.getLocation())) {
+                if (!playerManager.isAudioPlayerPlaying(blockState.getLocation())) {
                     itemJukeboxToHopper(blockState.getBlock());
                 }
             }
@@ -227,13 +238,13 @@ public class HopperManager implements Listener {
 
         Block hopperBlock = event.getBlock();
 
-        if (!PlayerManager.instance().isAudioPlayerPlaying(hopperBlock.getRelative(BlockFace.UP).getLocation())) {
+        if (!playerManager.isAudioPlayerPlaying(hopperBlock.getRelative(BlockFace.UP).getLocation())) {
             itemJukeboxToHopper(hopperBlock.getRelative(BlockFace.UP));
         }
 
     }
 
-    public void itemJukeboxToHopper (Block block) {
+    public void itemJukeboxToHopper(Block block) {
 
         if (block == null) return;
         if (!block.getLocation().getChunk().isLoaded()) return;
@@ -272,12 +283,12 @@ public class HopperManager implements Listener {
                             jukebox.setRecord(hopper.getInventory().getItem(i));
                             jukebox.update();
 
-                            String soundFileName = jukebox.getRecord().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(CustomDiscs.getInstance(), "customdisc"), PersistentDataType.STRING);
+                            String soundFileName = jukebox.getRecord().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(plugin, "customdisc"), PersistentDataType.STRING);
 
-                            Path soundFilePath = Path.of(CustomDiscs.getInstance().getDataFolder().getPath(), "musicdata", soundFileName);
+                            Path soundFilePath = Path.of(plugin.getDataFolder().getPath(), "musicdata", soundFileName);
 
                             assert VoicePlugin.voicechatServerApi != null;
-                            PlayerManager.instance().playLocationalAudio(VoicePlugin.voicechatServerApi, soundFilePath, null, jukebox.getBlock());
+                            playerManager.playLocationalAudio(VoicePlugin.voicechatServerApi, soundFilePath, null, jukebox.getBlock());
 
                             hopper.getInventory().setItem(i, new ItemStack(Material.AIR));
                             return;
@@ -297,12 +308,12 @@ public class HopperManager implements Listener {
                             jukebox.setRecord(hopper.getInventory().getItem(i));
                             jukebox.update();
 
-                            String soundFileName = jukebox.getRecord().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(CustomDiscs.getInstance(), "customdisc"), PersistentDataType.STRING);
+                            String soundFileName = jukebox.getRecord().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(plugin, "customdisc"), PersistentDataType.STRING);
 
-                            Path soundFilePath = Path.of(CustomDiscs.getInstance().getDataFolder().getPath(), "musicdata", soundFileName);
+                            Path soundFilePath = Path.of(plugin.getDataFolder().getPath(), "musicdata", soundFileName);
 
                             assert VoicePlugin.voicechatServerApi != null;
-                            PlayerManager.instance().playLocationalAudio(VoicePlugin.voicechatServerApi, soundFilePath, null, jukebox.getBlock());
+                            playerManager.playLocationalAudio(VoicePlugin.voicechatServerApi, soundFilePath, null, jukebox.getBlock());
 
                             hopper.getInventory().setItem(i, new ItemStack(Material.AIR));
                             return;
@@ -322,12 +333,12 @@ public class HopperManager implements Listener {
                             jukebox.setRecord(hopper.getInventory().getItem(i));
                             jukebox.update();
 
-                            String soundFileName = jukebox.getRecord().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(CustomDiscs.getInstance(), "customdisc"), PersistentDataType.STRING);
+                            String soundFileName = jukebox.getRecord().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(plugin, "customdisc"), PersistentDataType.STRING);
 
-                            Path soundFilePath = Path.of(CustomDiscs.getInstance().getDataFolder().getPath(), "musicdata", soundFileName);
+                            Path soundFilePath = Path.of(plugin.getDataFolder().getPath(), "musicdata", soundFileName);
 
                             assert VoicePlugin.voicechatServerApi != null;
-                            PlayerManager.instance().playLocationalAudio(VoicePlugin.voicechatServerApi, soundFilePath, null, jukebox.getBlock());
+                            playerManager.playLocationalAudio(VoicePlugin.voicechatServerApi, soundFilePath, null, jukebox.getBlock());
 
                             hopper.getInventory().setItem(i, new ItemStack(Material.AIR));
                             return;
@@ -347,12 +358,12 @@ public class HopperManager implements Listener {
                             jukebox.setRecord(hopper.getInventory().getItem(i));
                             jukebox.update();
 
-                            String soundFileName = jukebox.getRecord().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(CustomDiscs.getInstance(), "customdisc"), PersistentDataType.STRING);
+                            String soundFileName = jukebox.getRecord().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(plugin, "customdisc"), PersistentDataType.STRING);
 
-                            Path soundFilePath = Path.of(CustomDiscs.getInstance().getDataFolder().getPath(), "musicdata", soundFileName);
+                            Path soundFilePath = Path.of(plugin.getDataFolder().getPath(), "musicdata", soundFileName);
 
                             assert VoicePlugin.voicechatServerApi != null;
-                            PlayerManager.instance().playLocationalAudio(VoicePlugin.voicechatServerApi, soundFilePath, null, jukebox.getBlock());
+                            playerManager.playLocationalAudio(VoicePlugin.voicechatServerApi, soundFilePath, null, jukebox.getBlock());
 
                             hopper.getInventory().setItem(i, new ItemStack(Material.AIR));
                             return;
@@ -372,12 +383,12 @@ public class HopperManager implements Listener {
                             jukebox.setRecord(hopper.getInventory().getItem(i));
                             jukebox.update();
 
-                            String soundFileName = jukebox.getRecord().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(CustomDiscs.getInstance(), "customdisc"), PersistentDataType.STRING);
+                            String soundFileName = jukebox.getRecord().getItemMeta().getPersistentDataContainer().get(new NamespacedKey(plugin, "customdisc"), PersistentDataType.STRING);
 
-                            Path soundFilePath = Path.of(CustomDiscs.getInstance().getDataFolder().getPath(), "musicdata", soundFileName);
+                            Path soundFilePath = Path.of(plugin.getDataFolder().getPath(), "musicdata", soundFileName);
 
                             assert VoicePlugin.voicechatServerApi != null;
-                            PlayerManager.instance().playLocationalAudio(VoicePlugin.voicechatServerApi, soundFilePath, null, jukebox.getBlock());
+                            playerManager.playLocationalAudio(VoicePlugin.voicechatServerApi, soundFilePath, null, jukebox.getBlock());
 
                             hopper.getInventory().setItem(i, new ItemStack(Material.AIR));
                             return;
@@ -389,10 +400,10 @@ public class HopperManager implements Listener {
 
     }
 
-    private boolean isCustomMusicDisc (ItemStack item) {
+    private boolean isCustomMusicDisc(ItemStack item) {
 
-        return item.getItemMeta().getPersistentDataContainer().has(new NamespacedKey(CustomDiscs.getInstance(), "customdisc"), PersistentDataType.STRING) && (
-                        item.getType().equals(Material.MUSIC_DISC_13) ||
+        return item.getItemMeta().getPersistentDataContainer().has(new NamespacedKey(plugin, "customdisc"), PersistentDataType.STRING) && (
+                item.getType().equals(Material.MUSIC_DISC_13) ||
                         item.getType().equals(Material.MUSIC_DISC_CAT) ||
                         item.getType().equals(Material.MUSIC_DISC_BLOCKS) ||
                         item.getType().equals(Material.MUSIC_DISC_CHIRP) ||
@@ -407,16 +418,7 @@ public class HopperManager implements Listener {
                         item.getType().equals(Material.MUSIC_DISC_OTHERSIDE) ||
                         item.getType().equals(Material.MUSIC_DISC_5) ||
                         item.getType().equals(Material.MUSIC_DISC_PIGSTEP)
-                );
-    }
-
-    private static HopperManager instance;
-
-    public static HopperManager instance() {
-        if (instance == null) {
-            instance = new HopperManager();
-        }
-        return instance;
+        );
     }
 
 }
